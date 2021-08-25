@@ -13,3 +13,15 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
