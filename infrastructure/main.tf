@@ -7,64 +7,66 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "meditest-tf-state" 
-    key = "meditest.tfstate"
+    bucket = "meditest-tf-state"
+    key    = "meditest.tfstate"
     region = "eu-west-2"
   }
 }
 provider "aws" {
   profile = "default"
   region  = "eu-west-2"
-}
-
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  default_tags {
+    tags = {
+      CreatedBy = "MedichecksTeam"
+    }
   }
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-  owners = ["099720109477"]
 }
 
 resource "aws_vpc" "main" {
   cidr_block       = "10.0.0.0/16"
   instance_tenancy = "default"
-  tags = {
-    CreatedBy = "Micheal Wilkinson"
+}
+
+resource "aws_dynamodb_table" "dynamodb" {
+  name     = "fantastic-enigma-shas"
+  hash_key = "InputString"
+  write_capacity = 2
+  read_capacity = 2
+  attribute {
+    name = "InputString"
+    type = "S"
   }
 }
 
-resource "aws_subnet" "meditest-sub-1" {
-  vpc_id            = aws_vpc.main.id
-  availability_zone = "eu-west-2a"
-  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 4, 1)
-  tags = {
-      Name = "meditest-sub-1"
-    CreatedBy =  "Micheal Wilkinson"
+data "aws_iam_policy_document" "role_access_database_policy_doc" {
+  statement {
+    sid       = "DatabaseAccess"
+    actions   = ["dynamodb:PutItem"]
+    effect    = "Allow"
+    resources = [aws_dynamodb_table.dynamodb.arn]
   }
 }
 
-resource "aws_network_interface" "meditest-ni-1" {
-  subnet_id = aws_subnet.meditest-sub-1.id
-  tags = {
-      Name = "meditest-net-1"
-    CreatedBy =  "Micheal Wilkinson"
+data "aws_iam_policy_document" "lambda_assume_role_policy" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
   }
 }
 
-resource "aws_instance" "test_server" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  network_interface {
-    network_interface_id = aws_network_interface.meditest-ni-1.id
-    device_index         = 0
-  }
-  tags = {
-    Name = "meditest-server"
-    CreatedBy =  "Micheal Wilkinson"
-  }
+resource "aws_iam_policy" "role_access_database_policy" {
+  name   = "MedichecksDatabaseWriteLambdaPolicy"
+  policy = data.aws_iam_policy_document.role_access_database_policy_doc.json
+}
+
+resource "aws_iam_role" "role_access_database_role" { //That's how I roll
+  name = "DatabaseWriter"
+  managed_policy_arns = [
+    aws_iam_policy.role_access_database_policy.arn
+  ]
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
 }
