@@ -84,7 +84,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/fantastic-enigma/dev/1629991949219-2021-08-26T15:32:29.219Z/fantastic-enigma.zip"
+          "S3Key": "serverless/fantastic-enigma/dev/1630061420221-2021-08-27T10:50:20.221Z/fantastic-enigma.zip"
         },
         "Handler": "bin/dynamodb-writer",
         "Runtime": "go1.x",

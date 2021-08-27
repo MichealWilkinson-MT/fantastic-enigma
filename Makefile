@@ -12,3 +12,6 @@ clean:
 
 deploy: clean build
 	sls deploy --verbose --stage dev
+
+infra:
+	cd $(CURRENT_DIR)/infrastructure/terraform; terraform apply
