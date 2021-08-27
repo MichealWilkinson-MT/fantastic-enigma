@@ -20,6 +20,7 @@ package:
 
 functions:
   dynamodb-writer:
+    role: ${ssm:/fantastic-enigma/${opt:stage}/lambda/role-arn} # This is how lambda's get a different role per lambda
     handler: bin/dynamodb-writer
     events:
       - sqs: ${ssm:/fantastic-enigma/${opt:stage}/inputQueue/arn}
