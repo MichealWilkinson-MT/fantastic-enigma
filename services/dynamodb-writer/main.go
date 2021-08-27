@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -13,7 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("eu-west-2"))
+var databaseRegion string = os.Getenv("DATABASE_REGION")
+var dynamodbTableName string = os.Getenv("DYNAMODB_TABLE_NAME")
+var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion))
 
 // receives from queue
 func handleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
@@ -33,7 +36,7 @@ func handleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 func putHashInDatabase(messageString, hashedResult string) error {
 	fmt.Print("INFO: Writing to DB")
 	input := &dynamodb.PutItemInput {
-		TableName: aws.String("fantastic-enigma-shas"),
+		TableName: aws.String(dynamodbTableName),
 		Item: map[string]*dynamodb.AttributeValue {
 			"InputString" : {
 				S: aws.String(messageString),

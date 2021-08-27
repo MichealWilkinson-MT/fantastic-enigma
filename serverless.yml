@@ -24,3 +24,6 @@ functions:
     handler: bin/dynamodb-writer
     events:
       - sqs: ${ssm:/fantastic-enigma/${opt:stage}/inputQueue/arn}
+    environment:
+      DATABASE_REGION: ${ssm:/fantastic-enigma/${opt:stage}/database-region}
+      DYNAMODB_TABLE_NAME: ${ssm:/fantastic-enigma/${opt:stage}/database-name}
