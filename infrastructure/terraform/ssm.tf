@@ -12,6 +12,13 @@ resource "aws_ssm_parameter" "import-lambda-role-arn" {
   value       = aws_iam_role.hash_function_role.arn
 }
 
+resource "aws_ssm_parameter" "read-lambda-role-arn" {
+  name        = "/fantastic-enigma/${var.stage}/lambda/read-role-arn"
+  description = "arn for the lambda role in the ${var.stage} environment"
+  type        = "SecureString"
+  value       = aws_iam_role.read_function_role.arn
+}
+
 resource "aws_ssm_parameter" "database-region" {
   name        = "/fantastic-enigma/${var.stage}/database-region"
   description = "The region where the database is located"

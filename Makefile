@@ -6,6 +6,7 @@ BIN_DIR = $(CURRENT_DIR)/bin
 
 build:
 	cd $(CURRENT_DIR)/services/dynamodb-writer; env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o $(BIN_DIR)/dynamodb-writer main.go
+	cd $(CURRENT_DIR)/services/dynamodb-reader; env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o $(BIN_DIR)/dynamodb-reader main.go
 
 clean:
 	rm -rf ./bin

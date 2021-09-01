@@ -17,7 +17,6 @@ variable "stage" {
   type    = string
   default = "dev"
 }
-
 provider "aws" {
   profile = "default"
   region  = "eu-west-2"
@@ -30,5 +29,3 @@ provider "aws" {
 
 data "aws_caller_identity" "aws_acc" {}
 data "aws_region" "aws_region" {}
-
-
