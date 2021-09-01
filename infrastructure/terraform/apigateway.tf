@@ -25,6 +25,16 @@ data "aws_iam_policy_document" "api_gateway_publish_sqs_policy" {
   }
 }
 
+data "aws_iam_policy_document" "api_gateway_invoke_lambda_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "lambda:invokeFunction"
+    ]
+    resources = ["arn:aws:lambda:eu-west-2:261219435789:function:fantastic-enigma-dev-dynamodb-reader"]
+  }
+}
+
 data "aws_iam_policy_document" "api_gateway_assume_role_policy" {
   statement {
     effect = "Allow"
@@ -36,6 +46,11 @@ data "aws_iam_policy_document" "api_gateway_assume_role_policy" {
     }
     actions = ["sts:AssumeRole"]
   }
+}
+
+resource "aws_iam_policy" "api_gateway_invoke_lambda_policy" {
+  name = "API_Gateway_Trigger_Lambdas"
+  policy = data.aws_iam_policy_document.api_gateway_invoke_lambda_policy.json
 }
 
 resource "aws_iam_policy" "api_gateway_logs_policy" {
@@ -52,7 +67,8 @@ resource "aws_iam_role" "api_gateway_role" {
   name = "MedichecksApiGatewayRole"
   managed_policy_arns = [
     aws_iam_policy.api_gateway_publish_sqs_policy.arn,
-    aws_iam_policy.api_gateway_logs_policy.arn
+    aws_iam_policy.api_gateway_logs_policy.arn,
+    aws_iam_policy.api_gateway_invoke_lambda_policy.arn
   ]
   assume_role_policy = data.aws_iam_policy_document.api_gateway_assume_role_policy.json
 }
@@ -83,4 +99,17 @@ resource "aws_apigatewayv2_route" "api_gateway_post_hash_route" {
   api_id = aws_apigatewayv2_api.api_gateway.id
   route_key = "POST /hash"
   target = "integrations/${aws_apigatewayv2_integration.api_gateway_post_hash_integration.id}"
+}
+
+resource "aws_apigatewayv2_integration" "api_gateway_post_read_integration" {
+  api_id = aws_apigatewayv2_api.api_gateway.id
+  integration_type = "AWS_PROXY"
+  integration_uri = "arn:aws:lambda:eu-west-2:261219435789:function:fantastic-enigma-dev-dynamodb-reader"
+  credentials_arn = aws_iam_role.api_gateway_role.arn
+}
+
+resource "aws_apigatewayv2_route" "api_gateway_post_read_route" {
+  api_id = aws_apigatewayv2_api.api_gateway.id
+  route_key = "GET /hash"
+  target = "integrations/${aws_apigatewayv2_integration.api_gateway_post_read_integration.id}"
 }
