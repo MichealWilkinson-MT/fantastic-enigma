@@ -16,25 +16,36 @@ import (
 
 var databaseRegion string = os.Getenv("DATABASE_REGION")
 var dynamodbTableName string = os.Getenv("DYNAMODB_TABLE_NAME")
-var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion))
+var db dynamoDBClient
+
+type dynamoDBClient interface {
+	PutItem(dynamodb.PutItemInput) (dynamodb.PutItemOutput, error)
+}
 
 // receives from queue
 func handleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, message := range sqsEvent.Records {
 		messageString := message.Body
-		fmt.Printf("INFO: Hashing %s\n", messageString)
-		hash := sha1.New()
-		hash.Write([]byte(messageString))
-		byteSlice := hash.Sum(nil)
-		hashString := hex.EncodeToString(byteSlice)
-		fmt.Printf("INFO: Got hash %s\n", hashString)
+		hashString := hashInput(messageString)
 		putHashInDatabase(messageString, hashString)
 	}
 	return nil
 }
 
+// set database
+
+// init database
+
+
+func hashInput(input string) string {
+	hash := sha1.New()
+	hash.Write([]byte(input))
+	byteSlice := hash.Sum(nil)
+	hashString := hex.EncodeToString(byteSlice)
+	return hashString
+}
+
 func putHashInDatabase(messageString, hashedResult string) error {
-	fmt.Print("INFO: Writing to DB")
 	input := &dynamodb.PutItemInput {
 		TableName: aws.String(dynamodbTableName),
 		Item: map[string]*dynamodb.AttributeValue {
@@ -55,5 +66,7 @@ func putHashInDatabase(messageString, hashedResult string) error {
 }
 
 func main() {
+	// call init
+	db = dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion))
 	lambda.Start(handleRequest)
 }
