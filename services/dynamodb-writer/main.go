@@ -19,8 +19,9 @@ var dynamodbTableName string = os.Getenv("DYNAMODB_TABLE_NAME")
 var db dynamoDBClient
 
 type dynamoDBClient interface {
-	PutItem(dynamodb.PutItemInput) (dynamodb.PutItemOutput, error)
+	PutItem(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error)
 }
+
 
 // receives from queue
 func handleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
@@ -32,7 +33,7 @@ func handleRequest(ctx context.Context, sqsEvent events.SQSEvent) error {
 	return nil
 }
 
-// set database
+// set databas
 
 // init database
 
@@ -65,8 +66,13 @@ func putHashInDatabase(messageString, hashedResult string) error {
 	return err
 }
 
+func initDatabase(client *dynamoDBClient) {
+	db = client
+	fmt.Println(db)
+}
+
 func main() {
 	// call init
-	db = dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion))
+	initDatabase(dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion)))
 	lambda.Start(handleRequest)
 }
