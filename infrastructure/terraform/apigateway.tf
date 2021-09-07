@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "api_gateway_invoke_lambda_policy" {
     actions = [
       "lambda:invokeFunction"
     ]
-    resources = ["arn:aws:lambda:eu-west-2:261219435789:function:fantastic-enigma-dev-dynamodb-reader"]
+    resources = ["arn:aws:lambda:${data.aws_region.aws_region.name}:${data.aws_caller_identity.aws_acc.account_id}:function:fantastic-enigma-${var.stage}-dynamodb-reader"]
   }
 }
 
@@ -49,22 +49,22 @@ data "aws_iam_policy_document" "api_gateway_assume_role_policy" {
 }
 
 resource "aws_iam_policy" "api_gateway_invoke_lambda_policy" {
-  name = "API_Gateway_Trigger_Lambdas"
+  name = "API_Gateway_Trigger_Lambda_${var.stage}"
   policy = data.aws_iam_policy_document.api_gateway_invoke_lambda_policy.json
 }
 
 resource "aws_iam_policy" "api_gateway_logs_policy" {
-  name = "apiGatewayLogsPolicy"
+  name = "apiGatewayLogsPolicy_${var.stage}"
   policy = data.aws_iam_policy_document.api_gateway_logs.json
 }
 
 resource "aws_iam_policy" "api_gateway_publish_sqs_policy" {
-  name = "apiGatewayPublishSQSPolicy"
+  name = "apiGatewayPublishSQSPolicy_${var.stage}"
   policy = data.aws_iam_policy_document.api_gateway_publish_sqs_policy.json
 }
 
 resource "aws_iam_role" "api_gateway_role" {
-  name = "MedichecksApiGatewayRole"
+  name = "MedichecksApiGatewayRole_${var.stage}"
   managed_policy_arns = [
     aws_iam_policy.api_gateway_publish_sqs_policy.arn,
     aws_iam_policy.api_gateway_logs_policy.arn,
@@ -73,13 +73,13 @@ resource "aws_iam_role" "api_gateway_role" {
   assume_role_policy = data.aws_iam_policy_document.api_gateway_assume_role_policy.json
 }
 resource "aws_apigatewayv2_api" "api_gateway" {
-  name = "FantasticEnigmaApiv2"
+  name = "FantasticEnigmaApiv2_${var.stage}"
   protocol_type = "HTTP"
 }
 
 resource "aws_apigatewayv2_stage" "api_gateway_dev_stage" {
   api_id = aws_apigatewayv2_api.api_gateway.id
-  name = "dev"
+  name = "${var.stage}"
   auto_deploy = true
 }
 
@@ -104,7 +104,7 @@ resource "aws_apigatewayv2_route" "api_gateway_post_hash_route" {
 resource "aws_apigatewayv2_integration" "api_gateway_post_read_integration" {
   api_id = aws_apigatewayv2_api.api_gateway.id
   integration_type = "AWS_PROXY"
-  integration_uri = "arn:aws:lambda:eu-west-2:261219435789:function:fantastic-enigma-dev-dynamodb-reader"
+  integration_uri = "arn:aws:lambda:${data.aws_region.aws_region.name}:${data.aws_caller_identity.aws_acc.account_id}:function:fantastic-enigma-${var.stage}-dynamodb-reader"
   credentials_arn = aws_iam_role.api_gateway_role.arn
 }
 

@@ -7,7 +7,7 @@ data "aws_iam_policy_document" "sqs_trigger_lambda" {
 }
 
 resource "aws_sqs_queue" "import-queue" {
-  name                        = "medichecks-import-q.fifo"
+  name                        = "medichecks-import-q-${var.stage}.fifo"
   fifo_queue                  = true
   content_based_deduplication = true
   policy = data.aws_iam_policy_document.sqs_trigger_lambda.json

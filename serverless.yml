@@ -19,7 +19,8 @@ package:
     - ./bin/**
 
 functions:
-  dynamodb-writer:
+  dynamodbWriter:
+    name: fantastic-enigma-${opt:stage}-dynamodb-writer
     role: ${ssm:/fantastic-enigma/${opt:stage}/lambda/role-arn} # This is how lambda's get a different role per lambda
     handler: bin/dynamodb-writer
     events:
@@ -27,7 +28,8 @@ functions:
     environment:
       DATABASE_REGION: ${ssm:/fantastic-enigma/${opt:stage}/database-region}
       DYNAMODB_TABLE_NAME: ${ssm:/fantastic-enigma/${opt:stage}/database-name}
-  dynamodb-reader:
+  dynamodbReader:
+    name: fantastic-enigma-${opt:stage}-dynamodb-reader
     role: ${ssm:/fantastic-enigma/${opt:stage}/lambda/read-role-arn} # This is how lambda's get a different role per lambda
     handler: bin/dynamodb-reader
     environment:

@@ -50,12 +50,12 @@ data "aws_iam_policy_document" "dynamodbwriter_assume_role_policy" {
 }
 
 resource "aws_iam_policy" "hash_function_policy" {
-  name   = "MedichecksDatabaseWriteLambdaPolicy"
+  name   = "MedichecksDatabaseWriteLambdaPolicy_${var.stage}"
   policy = data.aws_iam_policy_document.hash_function_policy_doc.json
 }
 
 resource "aws_iam_role" "hash_function_role" {
-  name = "DatabaseWriter"
+  name = "DatabaseWriter_${var.stage}"
   managed_policy_arns = [
     aws_iam_policy.hash_function_policy.arn
   ]

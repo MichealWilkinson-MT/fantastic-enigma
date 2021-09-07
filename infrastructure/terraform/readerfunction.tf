@@ -36,12 +36,12 @@ data "aws_iam_policy_document" "dynamodbreader_assume_role_policy" {
 }
 
 resource "aws_iam_policy" "read_function_policy" {
-  name   = "MedichecksDatabaseReaderLambdaPolicy"
+  name   = "MedichecksDatabaseReaderLambdaPolicy_${var.stage}"
   policy = data.aws_iam_policy_document.read_function_policy_doc.json
 }
 
 resource "aws_iam_role" "read_function_role" {
-  name = "DatabaseReader"
+  name = "DatabaseReader_${var.stage}"
   managed_policy_arns = [
     aws_iam_policy.read_function_policy.arn
   ]
