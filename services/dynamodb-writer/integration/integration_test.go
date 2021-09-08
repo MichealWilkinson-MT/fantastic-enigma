@@ -15,10 +15,20 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/stretchr/testify/assert"
 )
 
 var stage string
+
+var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("eu-west-2"))
+
+type getItemResponse struct {
+	InputString string `json:"InputString"`
+	Sha         string `json:"Sha"`
+}
 
 func init() {
 	flag.StringVar(&stage, "stage", "dev", "Specify the stage to test")
@@ -35,7 +45,7 @@ func TestInput(test *testing.T) {
 		request := events.SQSEvent{
 			Records: []events.SQSMessage{
 				{
-					Body: "Rishi is the best!",
+					Body: "Alex is the best!",
 				},
 			},
 		}
@@ -44,8 +54,7 @@ func TestInput(test *testing.T) {
 
 		functionName := fmt.Sprintf("%s-%s-%s", "fantastic-enigma", stage, "dynamodb-writer")
 
-		// Need to figure out how to mutate based on "Stage"
-		result, err := client.Invoke(&lambda.InvokeInput{
+		_, err := client.Invoke(&lambda.InvokeInput{
 			FunctionName: aws.String(functionName),
 			Payload:      payload,
 		})
@@ -54,5 +63,28 @@ func TestInput(test *testing.T) {
 			fmt.Println("Its all gone wrong")
 			os.Exit(1)
 		}
+
+		// check if result is in the database
+		input := &dynamodb.GetItemInput{
+			TableName: aws.String(fmt.Sprintf("fantastic-enigma-shas-%s", stage)),
+			Key: map[string]*dynamodb.AttributeValue{
+				"InputString": {
+					S: aws.String("Alex is the best!"),
+				},
+			},
+		}
+
+		itemOutput, err := db.GetItem(input)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err)
+		}
+
+		var resp getItemResponse
+		err = dynamodbattribute.UnmarshalMap(itemOutput.Item, &resp)
+		if err != nil {
+			fmt.Println("Error unmarshalling MyGetItemsFunction response")
+			os.Exit(0)
+		}
+		assert.Equal(test, "Alex is the best!", resp.InputString)
 	})
 }
