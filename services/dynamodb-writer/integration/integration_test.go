@@ -50,15 +50,21 @@ func (suite *integrationTestSuite) SetupSuite() {
 //Delete all data from the DB after each test
 func (suite *integrationTestSuite) TearDownTest() {
 
-	channel := make(chan dynamodb.DeleteItemOutput, len(suite.dbCleanupKeys))
+	suite.clearDBOfUsedKeys(suite.dbCleanupKeys)
+	suite.dbCleanupKeys = nil
+	// (^o'.'o^) Pika!
+	// "<(*.*<) ^(*.*)^ (>*.*)>"
+}
+
+func (suite *integrationTestSuite) clearDBOfUsedKeys(dbCleanupKeys []string) {
+	channel := make(chan dynamodb.DeleteItemOutput, len(dbCleanupKeys))
 
 	var wg sync.WaitGroup
 
-	for _, key := range suite.dbCleanupKeys {
+	for _, key := range dbCleanupKeys {
 		wg.Add(1)
 
 		go func(key string) {
-			fmt.Println("starting thread " + key)
 			out, err := suite.deleteItem(key)
 			if err == nil {
 				channel <- *out
@@ -70,17 +76,11 @@ func (suite *integrationTestSuite) TearDownTest() {
 	}
 	wg.Wait()
 	close(channel)
-
 	for i := range channel {
-		fmt.Println("<*)))><")
+		fmt.Fprintf(os.Stdout, fmt.Sprint(i.Attributes))
 		fmt.Println(i.Attributes)
 	}
-
 }
-
-// func clearDBOfUsedKeys(dbCleanupKeys []string)  {
-
-// }
 
 func (suite *integrationTestSuite) deleteItem(item string) (*dynamodb.DeleteItemOutput, error) {
 	input := &dynamodb.DeleteItemInput{
