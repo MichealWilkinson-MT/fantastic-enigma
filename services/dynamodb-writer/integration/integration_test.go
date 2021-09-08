@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,16 +27,6 @@ import (
 
 var stage string
 
-//Integration test suite
-type integrationTestSuite struct {
-	suite.Suite
-	db *dynamodb.DynamoDB
-}
-
-func (suite *integrationTestSuite) SetupSuite() {
-	suite.db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("eu-west-2")) //TODO Factor out the explicit DB region
-}
-
 type getItemResponse struct {
 	InputString string `json:"InputString"`
 	Sha         string `json:"Sha"`
@@ -43,6 +34,67 @@ type getItemResponse struct {
 
 func init() {
 	flag.StringVar(&stage, "stage", "dev", "Specify the stage to test")
+}
+
+//Integration test suite
+type integrationTestSuite struct {
+	suite.Suite
+	db            *dynamodb.DynamoDB
+	dbCleanupKeys []string
+}
+
+func (suite *integrationTestSuite) SetupSuite() {
+	suite.db = dynamodb.New(session.New(), aws.NewConfig().WithRegion("eu-west-2")) //TODO Factor out the explicit DB region
+}
+
+//Delete all data from the DB after each test
+func (suite *integrationTestSuite) TearDownTest() {
+
+	channel := make(chan dynamodb.DeleteItemOutput, len(suite.dbCleanupKeys))
+
+	var wg sync.WaitGroup
+
+	for _, key := range suite.dbCleanupKeys {
+		wg.Add(1)
+
+		go func(key string) {
+			fmt.Println("starting thread " + key)
+			out, err := suite.deleteItem(key)
+			if err == nil {
+				channel <- *out
+			} else {
+				fmt.Println("error " + err.Error())
+			}
+			defer wg.Done()
+		}(key)
+	}
+	wg.Wait()
+	close(channel)
+
+	for i := range channel {
+		fmt.Println("<*)))><")
+		fmt.Println(i.Attributes)
+	}
+
+}
+
+// func clearDBOfUsedKeys(dbCleanupKeys []string)  {
+
+// }
+
+func (suite *integrationTestSuite) deleteItem(item string) (*dynamodb.DeleteItemOutput, error) {
+	input := &dynamodb.DeleteItemInput{
+		TableName:    aws.String(fmt.Sprintf("fantastic-enigma-shas-%s", stage)),
+		ReturnValues: aws.String("ALL_OLD"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"InputString": {
+				S: aws.String(item),
+			},
+		},
+	}
+	output, err := suite.db.DeleteItem(input)
+	return output, err
+
 }
 
 func (suite *integrationTestSuite) TestInput() {
@@ -98,6 +150,7 @@ func (suite *integrationTestSuite) TestInput() {
 		os.Exit(0)
 	}
 	assert.Equal(suite.T(), randomTestString, resp.InputString)
+	suite.dbCleanupKeys = append(suite.dbCleanupKeys, randomTestString)
 }
 
 func TestIntegrationTestSuite(t *testing.T) {
