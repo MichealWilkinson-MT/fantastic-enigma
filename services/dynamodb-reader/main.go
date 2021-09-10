@@ -18,7 +18,6 @@ var db = dynamodb.New(session.New(), aws.NewConfig().WithRegion(databaseRegion))
 
 func handleRequest(ctx context.Context, event events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	input := event.QueryStringParameters["string"]
-	// fmt.Println(input)
 	output, _ := retrieveHashFromDatabase(input)
 	return events.APIGatewayV2HTTPResponse{StatusCode: 200, Body: output}, nil
 }
@@ -27,8 +26,8 @@ func retrieveHashFromDatabase(query string) (hash string, err error) {
 	fmt.Printf("Retrieving %s from store", query)
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(dynamodbTableName),
-		Key: map[string]*dynamodb.AttributeValue {
-			"InputString" : {
+		Key: map[string]*dynamodb.AttributeValue{
+			"InputString": {
 				S: aws.String(query),
 			},
 		},
@@ -36,9 +35,8 @@ func retrieveHashFromDatabase(query string) (hash string, err error) {
 
 	itemOutput, err := db.GetItem(input)
 	if err != nil {
-		fmt.Printf("ERROR: %s\n" , err)
+		fmt.Printf("ERROR: %s\n", err)
 	} else {
-		// err = dynamodbattribute.UnmarshalMap(*itemOutput.Item, hash)
 		fmt.Printf("output = %v", itemOutput.Item)
 		hash = itemOutput.Item["Sha"].String()
 	}
